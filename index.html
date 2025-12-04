@@ -1,0 +1,451 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Activity, Clock, Flame, CheckCircle, ChevronDown, ChevronRight, 
+  AlertTriangle, Eye, X, Check, Dumbbell, Zap, HeartPulse, 
+  Utensils, Calendar, ShieldAlert, Edit2, Save, TrendingUp, HelpCircle
+} from 'lucide-react';
+
+// --- COMPONENTES VISUALES ---
+const ExerciseIcon = ({ type }) => {
+  if (type.includes('Cardio')) return <div className="p-3 bg-orange-100 text-orange-600 rounded-2xl"><HeartPulse size={24} /></div>;
+  if (type.includes('Fuerza')) return <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl"><Dumbbell size={24} /></div>;
+  return <div className="p-3 bg-emerald-100 text-emerald-600 rounded-2xl"><Zap size={24} /></div>;
+};
+
+const GymAppVisual = () => {
+  // --- ESTADO Y DATOS ---
+  const [userProfile, setUserProfile] = useState({
+    age: 52, weight: 106, height: 173, diet: 'Ayuno 16/8', bmi: '35.4'
+  });
+  
+  // Estado para edición de peso
+  const [isEditingWeight, setIsEditingWeight] = useState(false);
+  const [tempWeight, setTempWeight] = useState(106);
+
+  const [activeTab, setActiveTab] = useState('routine');
+  const [expandedDay, setExpandedDay] = useState('Día 1');
+  const [selectedMachine, setSelectedMachine] = useState(null);
+  
+  // Estado para la progresión (Fases)
+  const [currentPhase, setCurrentPhase] = useState('phase1'); // 'phase1' | 'phase2'
+
+  // Estado para guardar los pesos de los ejercicios
+  const [exerciseLogs, setExerciseLogs] = useState({});
+
+  // Recalcular IMC al cambiar peso
+  useEffect(() => {
+    const heightM = userProfile.height / 100;
+    const newBmi = (userProfile.weight / (heightM * heightM)).toFixed(1);
+    setUserProfile(prev => ({ ...prev, bmi: newBmi }));
+  }, [userProfile.weight]);
+
+  const handleWeightSave = () => {
+    setUserProfile(prev => ({ ...prev, weight: tempWeight }));
+    setIsEditingWeight(false);
+  };
+
+  const handleLogChange = (exerciseId, value) => {
+    setExerciseLogs(prev => ({
+      ...prev,
+      [exerciseId]: value
+    }));
+  };
+
+  // --- BASE DE DATOS MÁQUINAS (SVG Mejorados) ---
+  const machineVisuals = {
+    'legpress': {
+      name: 'Prensa de Piernas',
+      visual: (
+        <div className="relative w-full h-48 bg-gradient-to-br from-slate-100 to-white rounded-2xl border border-slate-200 flex items-center justify-center p-4 shadow-inner">
+           <svg viewBox="0 0 200 120" className="w-full h-full stroke-slate-700 stroke-2 fill-none drop-shadow-md">
+            <line x1="20" y1="110" x2="180" y2="110" className="stroke-slate-300 stroke-2" />
+            <path d="M40,90 L30,110" className="stroke-slate-400" /> 
+            <path d="M40,90 L40,50 L70,50" strokeLinecap="round" className="stroke-slate-800 stroke-[3]" />
+            <line x1="70" y1="100" x2="130" y2="100" className="stroke-slate-300" />
+            <rect x="130" y="30" width="12" height="70" rx="2" className="fill-slate-200 stroke-slate-400" />
+            <circle cx="55" cy="45" r="7" className="fill-blue-500 stroke-none" />
+            <path d="M55,53 L55,80 L80,85" className="stroke-blue-500 stroke-[3]" />
+            <path d="M80,85 L110,70 L130,50" className="stroke-blue-500 stroke-[3]" />
+            <circle cx="130" cy="50" r="8" className="fill-red-500/20 stroke-red-500 animate-pulse" />
+            <circle cx="130" cy="50" r="3" className="fill-red-500 stroke-none" />
+          </svg>
+          <div className="absolute top-2 right-2 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-1 rounded-full border border-red-200 shadow-sm">
+            ¡PIES ARRIBA!
+          </div>
+        </div>
+      ),
+      checklist: ['Respaldo inclinado', 'Pies parte SUPERIOR', 'Rodillas semiflexionadas'],
+      warning: 'Sustituto seguro de la sentadilla.'
+    },
+    'legextension': {
+      name: 'Extensión Cuádriceps',
+      visual: (
+        <div className="relative w-full h-48 bg-gradient-to-br from-slate-100 to-white rounded-2xl border border-slate-200 flex items-center justify-center p-4 shadow-inner">
+           <svg viewBox="0 0 200 120" className="w-full h-full stroke-slate-700 stroke-2 fill-none drop-shadow-md">
+            <path d="M35,60 L35,110 L75,110 L75,60" className="fill-white stroke-slate-300" />
+            <path d="M40,60 L40,90 L70,90" className="stroke-blue-500 stroke-[3]" />
+            <path d="M70,90 L100,90" className="stroke-blue-500 stroke-[3]" />
+            <circle cx="70" cy="100" r="5" className="fill-white stroke-red-500 stroke-2" />
+            <line x1="70" y1="100" x2="100" y2="100" className="stroke-slate-400" />
+            <circle cx="100" cy="100" r="8" className="fill-slate-800 stroke-none" />
+          </svg>
+          <div className="absolute bottom-2 left-2 bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-1 rounded-full border border-blue-200">
+            ISOMÉTRICO (Aguanta)
+          </div>
+        </div>
+      ),
+      checklist: ['Rodillo sobre empeine', 'Eje alineado con rodilla', 'No mover, solo aguantar'],
+      warning: 'Ejercicio estático para no dañar cartílago.'
+    },
+    'latpulldown': {
+      name: 'Jalón al Pecho',
+      visual: (
+        <div className="relative w-full h-48 bg-gradient-to-br from-slate-100 to-white rounded-2xl border border-slate-200 flex items-center justify-center p-4 shadow-inner">
+           <svg viewBox="0 0 200 140" className="w-full h-full stroke-slate-700 stroke-2 fill-none drop-shadow-md">
+            <line x1="100" y1="10" x2="100" y2="130" className="stroke-slate-300 stroke-[4]" />
+            <path d="M80,130 L120,130" className="stroke-slate-300 stroke-[4]" />
+            <line x1="100" y1="10" x2="140" y2="10" />
+            <line x1="140" y1="10" x2="140" y2="40" className="stroke-slate-400" />
+            <path d="M120,40 L160,40" className="stroke-slate-800 stroke-[4] stroke-linecap-round" />
+            <circle cx="135" cy="70" r="8" className="fill-blue-500 stroke-none" />
+            <path d="M135,78 L135,110" className="stroke-blue-500 stroke-[3]" />
+            <path d="M135,80 L120,50" className="stroke-blue-500 stroke-[3]" />
+            <path d="M135,80 L150,50" className="stroke-blue-500 stroke-[3]" />
+            <circle cx="125" cy="95" r="5" className="fill-slate-800 stroke-none" />
+          </svg>
+          <div className="absolute top-2 left-2 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded-full border border-emerald-200">
+            POSTURA
+          </div>
+        </div>
+      ),
+      checklist: ['Rodillos apretados', 'Barra al pecho alto', 'Espalda recta'],
+      warning: 'Nunca tras nuca.'
+    }
+  };
+
+  // --- DATOS DE RUTINAS (POR FASES) ---
+  const routinesByPhase = {
+    'phase1': {
+      title: 'Fase 1: Adaptación y Seguridad',
+      subtitle: 'Semanas 1-4',
+      description: 'Objetivo: Aprender técnica y fortalecer tendones sin dolor.',
+      data: {
+        'Día 1': {
+          focus: 'Rodilla Segura',
+          color: 'from-blue-500 to-indigo-600',
+          exercises: [
+            { id: 1, type: 'Calentamiento', name: 'Bici Estática', sets: '10 min', note: 'Ritmo suave para lubricar.', machineId: null },
+            { id: 2, type: 'Fuerza', name: 'Puente de Glúteos', sets: '3 x 15', note: 'Suelo. Levanta cadera. Clave para bajar escaleras.', machineId: null },
+            { id: 3, type: 'Fuerza', name: 'Prensa de Piernas', sets: '3 x 12', note: 'PIES ALTOS. Protege rodilla.', machineId: 'legpress', hasWeight: true },
+            { id: 4, type: 'Fuerza', name: 'Extensión Cuádriceps', sets: '3 x 15s', note: 'ISOMÉTRICO. Aguanta arriba.', machineId: 'legextension', hasWeight: true },
+            { id: 5, type: 'Fuerza', name: 'Remo en Máquina', sets: '3 x 12', note: 'Espalda recta.', machineId: null, hasWeight: true },
+            { id: 6, type: 'Cardio', name: 'Elíptica', sets: '15 min', note: 'Sin impacto.', machineId: null }
+          ]
+        },
+        'Día 2': {
+          focus: 'Tren Superior',
+          color: 'from-indigo-500 to-purple-600',
+          exercises: [
+            { id: 7, type: 'Calentamiento', name: 'Caminata Cinta', sets: '10 min', note: 'Inclinación ligera. No correr.', machineId: null },
+            { id: 8, type: 'Fuerza', name: 'Press de Pecho', sets: '3 x 12', note: 'Controla la bajada.', machineId: null, hasWeight: true },
+            { id: 9, type: 'Fuerza', name: 'Jalón al Pecho', sets: '3 x 12', note: 'A la clavícula.', machineId: 'latpulldown', hasWeight: true },
+            { id: 10, type: 'Fuerza', name: 'Plancha (Rodillas)', sets: '3 x 20s', note: 'Apoya rodillas, no pies.', machineId: null },
+            { id: 11, type: 'Cardio', name: 'Bici Intervalos', sets: '15 min', note: '1 min fuerte / 1 min suave.', machineId: null }
+          ]
+        },
+        'Día 3': {
+          focus: 'Metabólico',
+          color: 'from-purple-500 to-pink-600',
+          exercises: [
+            { id: 12, type: 'Fuerza', name: 'Circuito Máquinas', sets: '3 vueltas', note: 'Prensa, Remo, Press. 15 reps sin pausa.', machineId: 'legpress', hasWeight: true },
+            { id: 13, type: 'Cardio', name: 'Caminata Cuesta Arriba', sets: '25 min', note: 'Quema calorías sin impacto.', machineId: null }
+          ]
+        }
+      }
+    },
+    'phase2': {
+      title: 'Fase 2: Progresión de Carga',
+      subtitle: 'Semanas 5-8',
+      description: 'Objetivo: Aumentar un poco el peso y bajar repeticiones.',
+      data: {
+        'Día 1': {
+          focus: 'Fuerza Pierna',
+          color: 'from-emerald-500 to-teal-600',
+          exercises: [
+            { id: 101, type: 'Calentamiento', name: 'Bici Estática', sets: '5 min', note: 'Más intenso que antes.', machineId: null },
+            { id: 102, type: 'Fuerza', name: 'Prensa de Piernas', sets: '4 x 10', note: 'Sube peso, baja reps. Pies altos siempre.', machineId: 'legpress', hasWeight: true },
+            { id: 103, type: 'Fuerza', name: 'Extensión Cuádriceps', sets: '3 x 10', note: 'Ahora sí, movimiento lento y controlado (no isométrico).', machineId: 'legextension', hasWeight: true },
+            { id: 104, type: 'Cardio', name: 'Elíptica con Resistencia', sets: '20 min', note: 'Añade nivel de resistencia.', machineId: null }
+          ]
+        },
+        'Día 2': {
+          focus: 'Torso Fuerza',
+          color: 'from-teal-500 to-cyan-600',
+          exercises: [
+             { id: 105, type: 'Fuerza', name: 'Press de Pecho', sets: '4 x 10', note: 'Más peso.', machineId: null, hasWeight: true },
+             { id: 106, type: 'Fuerza', name: 'Remo Gironda', sets: '4 x 10', note: 'Remo sentado en polea baja.', machineId: null, hasWeight: true }
+          ]
+        },
+        'Día 3': {
+          focus: 'Descanso Activo',
+          color: 'from-cyan-500 to-blue-600',
+          exercises: [
+             { id: 107, type: 'Cardio', name: 'Caminata Larga', sets: '45 min', note: 'Ritmo constante.', machineId: null }
+          ]
+        }
+      }
+    }
+  };
+
+  const currentRoutine = routinesByPhase[currentPhase];
+
+  return (
+    <div className="flex flex-col h-screen bg-gray-50 font-sans text-slate-800 overflow-hidden">
+      
+      {/* HEADER VISUAL CON DEGRADADO */}
+      <div className="bg-white px-6 pt-12 pb-6 rounded-b-[2.5rem] shadow-lg z-10 relative flex-shrink-0">
+        <div className="flex justify-between items-end mb-4">
+          <div>
+            <p className="text-slate-400 text-sm font-medium mb-1">Tu Progreso</p>
+            <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">
+              Hola, <span className="text-blue-600">Campeón</span>
+            </h1>
+          </div>
+
+          {/* CONTROL DE PESO EDITABLE (TOUCH FRIENDLY) */}
+          <div className="bg-blue-50 px-4 py-3 rounded-2xl flex flex-col items-center border border-blue-100 min-w-[90px] active:scale-95 transition-transform">
+            {isEditingWeight ? (
+              <div className="flex flex-col items-center gap-2">
+                <input 
+                  type="number" 
+                  inputMode="decimal" // TECLADO NUMÉRICO MÓVIL
+                  value={tempWeight}
+                  onChange={(e) => setTempWeight(Number(e.target.value))}
+                  className="w-20 text-center text-lg font-bold border rounded p-1"
+                  autoFocus
+                />
+                <button 
+                  onClick={handleWeightSave} 
+                  className="bg-blue-600 text-white p-2 rounded-full shadow-lg"
+                >
+                  <Save size={18} />
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setIsEditingWeight(true)} className="flex flex-col items-center group w-full h-full justify-center">
+                <span className="text-xs text-blue-400 font-bold uppercase flex items-center gap-1 mb-1">
+                  Peso <Edit2 size={12} className="opacity-60"/>
+                </span>
+                <span className="text-2xl font-black text-blue-600 leading-none">{userProfile.weight} <span className="text-sm text-blue-400 font-bold">kg</span></span>
+                <span className="text-[10px] text-blue-400 font-medium mt-1">IMC: {userProfile.bmi}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* SELECTOR DE FASES (PROGRESIÓN) */}
+        <div className="bg-slate-50 p-1.5 rounded-2xl flex mb-2 border border-slate-200">
+           <button 
+             onClick={() => setCurrentPhase('phase1')}
+             className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${currentPhase === 'phase1' ? 'bg-white shadow-md text-slate-800' : 'text-slate-400'}`}
+           >
+             Fase 1 (Sem 1-4)
+           </button>
+           <button 
+             onClick={() => setCurrentPhase('phase2')}
+             className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${currentPhase === 'phase2' ? 'bg-white shadow-md text-slate-800' : 'text-slate-400'}`}
+           >
+             Fase 2 (Sem 5-8)
+           </button>
+        </div>
+        <p className="text-xs text-slate-500 text-center italic mb-2">{currentRoutine.description}</p>
+      </div>
+
+      {/* BODY SCROLLABLE - Padding extra al final (pb-32) para que nada quede oculto */}
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scrollbar-hide pb-32">
+        
+        {/* NAV TABS - STICKY (Pegajoso al hacer scroll) */}
+        <div className="sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm pt-2 pb-2">
+            <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 flex relative">
+              <div 
+                className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-slate-900 rounded-xl transition-all duration-300 ease-out shadow-lg ${activeTab === 'nutrition' ? 'translate-x-[100%] ml-1.5' : 'translate-x-0'}`}
+              ></div>
+              <button onClick={() => setActiveTab('routine')} className={`flex-1 py-3 text-sm font-bold rounded-xl relative z-10 transition-colors ${activeTab === 'routine' ? 'text-white' : 'text-slate-400'}`}>Entrenamiento</button>
+              <button onClick={() => setActiveTab('nutrition')} className={`flex-1 py-3 text-sm font-bold rounded-xl relative z-10 transition-colors ${activeTab === 'nutrition' ? 'text-white' : 'text-slate-400'}`}>Nutrición</button>
+            </div>
+        </div>
+
+        {activeTab === 'routine' && (
+          <div className="space-y-6 animate-fadeIn">
+            
+            {/* Regla de los Pesos (Tooltip Educativo) */}
+            <div className="flex items-start gap-4 p-5 bg-indigo-50 rounded-3xl border border-indigo-100 shadow-sm">
+               <HelpCircle className="text-indigo-500 shrink-0 mt-1" size={24} />
+               <div>
+                 <h3 className="font-bold text-indigo-900 text-base">¿Cuánto peso debo poner?</h3>
+                 <p className="text-sm text-indigo-700 mt-2 leading-relaxed">
+                   Busca un peso que te cueste mover en la repetición 10, pero que no te duela la articulación. Si al acabar la serie podrías haber hecho 5 más, sube el peso. Si no llegas a 8, bájalo.
+                 </p>
+               </div>
+            </div>
+
+            {/* ACORDEONES */}
+            <div className="space-y-4">
+              {Object.entries(currentRoutine.data).map(([day, data]) => {
+                const isExpanded = expandedDay === day;
+                return (
+                  <div key={day} className={`bg-white rounded-[2rem] overflow-hidden transition-all duration-300 ease-in-out border border-slate-100 ${isExpanded ? 'shadow-xl shadow-blue-50 ring-2 ring-blue-50' : 'shadow-sm'}`}>
+                    
+                    <button 
+                      onClick={() => setExpandedDay(isExpanded ? null : day)}
+                      className={`w-full p-5 flex items-center justify-between bg-white relative overflow-hidden active:bg-slate-50`}
+                    >
+                      <div className="flex items-center gap-4 z-10">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white bg-gradient-to-br ${data.color} shadow-lg`}>
+                          <Calendar size={24} />
+                        </div>
+                        <div className="text-left">
+                          <h3 className="font-bold text-slate-800 text-lg">{day}</h3>
+                          <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">{data.focus}</p>
+                        </div>
+                      </div>
+                      <ChevronDown size={28} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180 text-blue-500' : 'text-slate-300'}`} />
+                    </button>
+
+                    {isExpanded && (
+                      <div className="px-4 pb-6 pt-2 space-y-4 bg-white">
+                        <div className="h-px w-full bg-slate-50 mb-4"></div>
+                        {data.exercises.map((ex) => (
+                          <div key={ex.id} className="relative bg-slate-50 border border-slate-100 p-4 rounded-3xl active:scale-[0.99] transition-transform">
+                            <div className="flex items-center gap-4 mb-4">
+                              <ExerciseIcon type={ex.type} />
+                              <div className="flex-1">
+                                <div className="flex justify-between items-center mb-1">
+                                  <h4 className="font-bold text-slate-800 text-base">{ex.name}</h4>
+                                  <span className="text-xs font-black bg-slate-200 text-slate-600 px-3 py-1 rounded-lg">
+                                    {ex.sets}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-slate-500 leading-snug">{ex.note}</p>
+                              </div>
+                            </div>
+                            
+                            {/* CAMPO DE REGISTRO DE PESO (OPTIMIZADO MÓVIL) */}
+                            {ex.hasWeight && (
+                              <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-200/60">
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Carga (Kg):</span>
+                                <div className="flex items-center bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm w-36">
+                                  <input 
+                                    type="number"
+                                    inputMode="decimal" // TECLADO NUMÉRICO
+                                    placeholder="0"
+                                    value={exerciseLogs[ex.id] || ''}
+                                    onChange={(e) => handleLogChange(ex.id, e.target.value)}
+                                    className="w-full text-lg font-bold text-slate-800 outline-none placeholder:text-slate-200"
+                                  />
+                                  <span className="text-sm text-slate-400 font-bold ml-1">Kg</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Botón Ver Máquina (TÁCTIL GRANDE) */}
+                            {ex.machineId && (
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedMachine(machineVisuals[ex.machineId]);
+                                }}
+                                className="absolute right-4 top-4 bg-blue-50 text-blue-600 p-2 rounded-xl hover:bg-blue-100 active:bg-blue-200 transition-colors"
+                              >
+                                <Eye size={20} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'nutrition' && (
+          <div className="space-y-6 animate-fadeIn pb-10">
+            {/* Contenido Nutrición */}
+             <div className="bg-gradient-to-br from-orange-400 to-orange-600 rounded-[2rem] p-8 text-white shadow-xl shadow-orange-100 relative overflow-hidden">
+               <Flame className="absolute -right-4 -bottom-4 text-white opacity-20" size={140} />
+               <div className="relative z-10">
+                 <h2 className="text-3xl font-bold mb-3">Ayuno 16/8</h2>
+                 <p className="text-orange-100 text-base leading-relaxed mb-6">
+                   Recuerda: como no cenas, tu última comida (almuerzo/merienda) es sagrada. Necesitas proteína.
+                 </p>
+                 <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-sm font-bold">
+                   <Utensils size={16} /> Ventana: 12:00 - 20:00
+                 </div>
+               </div>
+            </div>
+             <h3 className="font-bold text-slate-800 text-xl px-2">Cenas "No-Cenas"</h3>
+            <div className="grid grid-cols-1 gap-4">
+               <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5">
+                  <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center text-2xl">🥚</div>
+                  <div>
+                    <h4 className="font-bold text-slate-800 text-lg">Tortilla Francesa</h4>
+                    <p className="text-sm text-slate-500">3 Huevos + Atún. Rápido y proteico.</p>
+                  </div>
+               </div>
+               <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5">
+                  <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center text-2xl">🍗</div>
+                  <div>
+                    <h4 className="font-bold text-slate-800 text-lg">Pollo a la Plancha</h4>
+                    <p className="text-sm text-slate-500">Con ensalada verde. Cero pesadez.</p>
+                  </div>
+               </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* MODAL MÁQUINA (BOTTOM SHEET MÓVIL) */}
+      {selectedMachine && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-md animate-fadeIn">
+          {/* Fondo oscuro cierra el modal al tocarlo */}
+          <div className="absolute inset-0" onClick={() => setSelectedMachine(null)}></div>
+          
+          <div className="bg-white w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-slideUp z-10 max-h-[90vh] overflow-y-auto">
+            <div className="relative p-8 pb-0">
+               <button 
+                  onClick={() => setSelectedMachine(null)}
+                  className="absolute top-6 right-6 p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+               <h3 className="text-2xl font-bold text-slate-800 pr-12">{selectedMachine.name}</h3>
+               <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mt-1">Guía Visual</p>
+            </div>
+            <div className="p-8">
+              {selectedMachine.visual}
+              <div className="mt-8 space-y-4">
+                 <div className="bg-amber-50 p-5 rounded-3xl border border-amber-100 flex gap-4">
+                    <AlertTriangle className="text-amber-500 shrink-0" size={24} />
+                    <p className="text-sm text-amber-900 font-medium leading-relaxed">
+                       {selectedMachine.warning}
+                    </p>
+                 </div>
+              </div>
+              <button 
+                onClick={() => setSelectedMachine(null)} 
+                className="w-full mt-8 py-5 bg-slate-900 text-white rounded-3xl font-bold text-lg active:scale-95 transition-transform"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default GymAppVisual;
